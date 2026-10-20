@@ -5,6 +5,7 @@ import session from "express-session";
 import MySQLStoreFactory from "express-mysql-session";
 import pool from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import reportRoutes from "./routes/reports.js";
 
 dotenv.config();
 
@@ -55,6 +56,9 @@ app.use(
 
 // Authentication endpoints
 app.use("/api/auth", authRoutes);
+
+// Reporting endpoints
+app.use("/api/reports", reportRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
