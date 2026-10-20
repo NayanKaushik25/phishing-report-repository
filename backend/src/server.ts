@@ -6,6 +6,9 @@ import MySQLStoreFactory from "express-mysql-session";
 import pool from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import reportRoutes from "./routes/reports.js";
+import investigationRoutes from "./routes/investigations.js";
+import assignmentRoutes from "./routes/assignments.js";
+import evidenceRoutes from "./routes/evidence.js";
 
 dotenv.config();
 
@@ -59,6 +62,15 @@ app.use("/api/auth", authRoutes);
 
 // Reporting endpoints
 app.use("/api/reports", reportRoutes);
+
+// Investigations endpoints
+app.use("/api/reports", investigationRoutes);
+
+// Assignment endpoints
+app.use("/api/reports", assignmentRoutes);
+
+// Evidence endpoints
+app.use("/api/reports", evidenceRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
