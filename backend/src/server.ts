@@ -1,15 +1,60 @@
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import session from "express-session";
+import MySQLStoreFactory from "express-mysql-session";
 import pool from "./config/db.js";
+import authRoutes from "./routes/auth.js";
 
 dotenv.config();
 
 const app = express();
+const isProduction = process.env.NODE_ENV === "production";
+const sessionSecret = process.env.SESSION_SECRET;
 
-app.use(cors());
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET is missing from backend/.env");
+}
+
+const MySQLStore = MySQLStoreFactory(session);
+
+const sessionStore = new MySQLStore(
+  {
+    clearExpired: true,
+    checkExpirationInterval: 15 * 60 * 1000,
+    expiration: 24 * 60 * 60 * 1000,
+    createDatabaseTable: true,
+  },
+  pool
+);
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+
+app.use(
+  session({
+    name: "phishing.sid",
+    secret: sessionSecret,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
+
+// Authentication endpoints
+app.use("/api/auth", authRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
