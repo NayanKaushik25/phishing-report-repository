@@ -2,6 +2,10 @@ import { Router } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "../config/db.js";
 import { requireAuth } from "../middleware/auth.js";
+import {
+  syncReportToNeo4j,
+  syncReportStatusToNeo4j,
+} from "../services/reportSync.js";
 
 const router = Router();
 
@@ -112,11 +116,17 @@ router.patch(
         return;
       }
 
-      const [result] = await pool.execute(
+      await pool.execute(
         "UPDATE report SET status = ? WHERE report_id = ?",
         [status, reportId],
       );
 
+      try {
+        await syncReportStatusToNeo4j(reportId, status);
+      } catch (syncError) {
+        console.error("Neo4j report status sync failed:", syncError);
+      }
+      
       res.status(200).json({
         message: "Report status updated successfully.",
         reportId,
@@ -224,6 +234,32 @@ router.post("/", requireAuth, async (req, res): Promise<void> => {
         reportSeverity,
       ],
     );
+
+    const [syncRows] = await pool.execute<RowDataPacket[]>(
+      `SELECT
+        r.report_id AS reportId,
+        r.title,
+        r.description,
+        r.severity,
+        r.status,
+        a.account_id AS accountId,
+        a.username,
+        p.platform_id AS platformId,
+        p.platform_name AS platformName
+      FROM report r
+      JOIN account a ON r.account_id = a.account_id
+      JOIN platform p ON a.platform_id = p.platform_id
+      WHERE r.report_id = ?`,
+      [result.insertId]
+    );
+
+if (syncRows.length > 0) {
+  try {
+    await syncReportToNeo4j(syncRows[0] as Parameters<typeof syncReportToNeo4j>[0]);
+  } catch (syncError) {
+    console.error("Neo4j report sync failed:", syncError);
+  }
+}
 
     res.status(201).json({
       message: "Phishing report created successfully.",

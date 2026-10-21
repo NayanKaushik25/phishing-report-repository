@@ -9,6 +9,7 @@ import reportRoutes from "./routes/reports.js";
 import investigationRoutes from "./routes/investigations.js";
 import assignmentRoutes from "./routes/assignments.js";
 import evidenceRoutes from "./routes/evidence.js";
+import searchRoutes from "./routes/search.js";
 
 dotenv.config();
 
@@ -71,6 +72,9 @@ app.use("/api/reports", assignmentRoutes);
 
 // Evidence endpoints
 app.use("/api/reports", evidenceRoutes);
+
+// Vector Search endpoints
+app.use("/api/search", searchRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
