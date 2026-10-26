@@ -6,6 +6,40 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2";
 
 const router = Router();
 
+// Classroom-only access: creates a session without collecting credentials.
+// Keep this disabled in production.
+router.post("/demo", (req, res) => {
+  if (process.env.DEMO_MODE !== "true") {
+    res.status(404).json({ message: "Demo access is disabled." });
+    return;
+  }
+
+  req.session.regenerate((err) => {
+    if (err) {
+      console.error("Demo session regeneration failed:", err);
+      res.status(500).json({ message: "Demo access failed." });
+      return;
+    }
+
+    req.session.user = {
+      userId: Number(process.env.DEMO_USER_ID || 1),
+      name: "Classroom Demo",
+      email: "demo@classroom.local",
+      role: "ADMIN",
+    };
+
+    req.session.save((saveError) => {
+      if (saveError) {
+        console.error("Demo session save failed:", saveError);
+        res.status(500).json({ message: "Demo access failed." });
+        return;
+      }
+
+      res.json({ message: "Demo access granted", user: req.session.user });
+    });
+  });
+});
+
 interface UserRow extends RowDataPacket {
   user_id: number;
   name: string;
