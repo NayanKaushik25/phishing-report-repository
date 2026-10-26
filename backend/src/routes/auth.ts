@@ -23,7 +23,7 @@ router.post("/demo", (req, res) => {
 
     req.session.user = {
       userId: Number(process.env.DEMO_USER_ID || 1),
-      name: "Classroom Demo",
+      name: "Nihar",
       email: "demo@classroom.local",
       role: "ADMIN",
     };
