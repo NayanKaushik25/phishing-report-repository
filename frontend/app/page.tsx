@@ -60,11 +60,34 @@ export default function Home() {
     setCatalogs(catalogData);
   };
   useEffect(() => {
-    request("/api/auth/me")
-      .then((data) => { setUser(data.user); return refresh(); })
-      .catch(() => request("/api/auth/demo", { method: "POST" })
-        .then((data) => { setUser(data.user); return refresh(); })
-        .catch(() => undefined));
+    const loadSession = async () => {
+      let sessionUser: User;
+      try {
+        const data = await request("/api/auth/me");
+        sessionUser = data.user;
+      } catch {
+        try {
+          const data = await request("/api/auth/demo", { method: "POST" });
+          sessionUser = data.user;
+        } catch {
+          setUser(null);
+          setReports([]);
+          setCatalogs(null);
+          return;
+        }
+      }
+
+      setUser(sessionUser);
+      try {
+        await refresh();
+      } catch {
+        setUser(null);
+        setReports([]);
+        setCatalogs(null);
+      }
+    };
+
+    void loadSession();
   }, []);
   const filteredReports = useMemo(() => reports.filter((report) => (filter === "ALL" || report.status === filter) && (!query || `${report.title} ${report.description} ${report.accountUsername}`.toLowerCase().includes(query.toLowerCase()))), [reports, filter, query]);
   const stats = useMemo(() => ({ total: reports.length, active: reports.filter((r) => r.status === "UNDER_REVIEW").length, critical: reports.filter((r) => r.severity === "CRITICAL").length, resolved: reports.filter((r) => r.status === "RESOLVED").length }), [reports]);
