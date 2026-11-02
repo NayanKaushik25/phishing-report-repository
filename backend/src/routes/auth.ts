@@ -96,7 +96,26 @@ router.post("/register", async (req, res) => {
        VALUES (?, ?, ?, 'REPORTER')`,
       [name.trim(), normalizedEmail, passwordHash]
     );
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
+    req.session.user = {
+      userId: result.insertId,
+      name: name.trim(),
+      email: normalizedEmail,
+      role: "REPORTER",
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
     res.status(201).json({
       message: "Registration successful",
       user: {
